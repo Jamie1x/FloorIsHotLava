@@ -1,0 +1,29 @@
+{
+  "name": "the-floor-is-hot-lava",
+  "version": "1.0.0",
+  "description": "The Floor is Hot Lava game for COMP392 Assignment 3",
+  "main": "game.js",
+  "dependencies": {
+    "typescript": "^1.8.7"
+  },
+  "devDependencies": {
+    "gulp": "^3.9.1",
+    "gulp-connect": "^2.3.1",
+    "gulp-debug": "^2.1.2",
+    "gulp-inject": "^3.0.0",
+    "gulp-open": "^1.0.0",
+    "gulp-sourcemaps": "^1.6.0",
+    "gulp-typescript": "^2.10.0",
+    "gulp-util": "^3.0.7"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Jamie1x/FloorIsHotLava.git"
+  },
+  "author": "Jamie Kennedy",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/Jamie1x/FloorIsHotLava/issues"
+  },
+  "homepage": "https://github.com/Jamie1x/FloorIsHotLava#readme"
+}
