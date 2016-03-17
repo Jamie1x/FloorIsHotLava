@@ -13,7 +13,9 @@ var AxisHelper = THREE.AxisHelper;
 var LambertMaterial = THREE.MeshLambertMaterial;
 var MeshBasicMaterial = THREE.MeshBasicMaterial;
 var LineBasicMaterial = THREE.LineBasicMaterial;
+var PhongMaterial = THREE.MeshPhongMaterial;
 var Material = THREE.Material;
+var Texture = THREE.Texture;
 var Line = THREE.Line;
 var Mesh = THREE.Mesh;
 var Object3D = THREE.Object3D;
@@ -48,8 +50,11 @@ var game = (function () {
     var instructions;
     var spotLight;
     var groundGeometry;
+    var groundPhysicsMaterial;
     var groundMaterial;
     var ground;
+    var groundTexture;
+    var groundTextureNormal;
     var clock;
     var playerGeometry;
     var playerMaterial;
@@ -123,16 +128,28 @@ var game = (function () {
         spotLight.name = "Spot Light";
         scene.add(spotLight);
         console.log("Added spotLight to scene");
-        // Burnt Ground
+        // Ground Object
+        groundTexture = new THREE.TextureLoader().load('../../Assets/images/GravelCobble.jpg');
+        groundTexture.wrapS = THREE.RepeatWrapping;
+        groundTexture.wrapT = THREE.RepeatWrapping;
+        groundTexture.repeat.set(8, 8);
+        groundTextureNormal = new THREE.TextureLoader().load('../../Assets/images/GravelCobbleNormal.jpg');
+        groundTextureNormal.wrapS = THREE.RepeatWrapping;
+        groundTextureNormal.wrapT = THREE.RepeatWrapping;
+        groundTextureNormal.repeat.set(8, 8);
+        groundMaterial = new PhongMaterial();
+        groundMaterial.map = groundTexture;
+        groundMaterial.bumpMap = groundTextureNormal;
+        groundMaterial.bumpScale = 0.2;
         groundGeometry = new BoxGeometry(32, 1, 32);
-        groundMaterial = Physijs.createMaterial(new LambertMaterial({ color: 0xe75d14 }), 0, 0);
-        ground = new Physijs.ConvexMesh(groundGeometry, groundMaterial, 0);
+        groundPhysicsMaterial = Physijs.createMaterial(groundMaterial, 0, 0);
+        ground = new Physijs.ConvexMesh(groundGeometry, groundPhysicsMaterial, 0);
         ground.receiveShadow = true;
         ground.name = "Ground";
         scene.add(ground);
         console.log("Added Burnt Ground to scene");
         // Player Object
-        playerGeometry = new BoxGeometry(2, 2, 2);
+        playerGeometry = new BoxGeometry(2, 4, 2);
         playerMaterial = Physijs.createMaterial(new LambertMaterial({ color: 0x00ff00 }), 0.4, 0);
         player = new Physijs.BoxMesh(playerGeometry, playerMaterial, 1);
         player.position.set(0, 30, 10);
@@ -143,6 +160,7 @@ var game = (function () {
         console.log("Added Player to Scene");
         // Collision Check
         player.addEventListener('collision', function (event) {
+            console.log(event);
             if (event.name === "Ground") {
                 console.log("player hit the ground");
                 isGrounded = true;
@@ -159,6 +177,9 @@ var game = (function () {
         directionLine = new Line(directionLineGeometry, directionLineMaterial);
         player.add(directionLine);
         console.log("Added DirectionLine to the Player");
+        // create parent-child relationship with camera and player
+        player.add(camera);
+        camera.position.set(0, 1, 0);
         // Sphere Object
         sphereGeometry = new SphereGeometry(2, 32, 32);
         sphereMaterial = Physijs.createMaterial(new LambertMaterial({ color: 0x00ff00 }), 0.4, 0);
@@ -226,6 +247,14 @@ var game = (function () {
     // Setup main game loop
     function gameLoop() {
         stats.update();
+        checkControls();
+        // render using requestAnimationFrame
+        requestAnimationFrame(gameLoop);
+        // render the scene
+        renderer.render(scene, camera);
+    }
+    // Check Controls Function
+    function checkControls() {
         if (keyboardControls.enabled) {
             velocity = new Vector3();
             var time = performance.now();
@@ -233,23 +262,18 @@ var game = (function () {
             if (isGrounded) {
                 var direction = new Vector3(0, 0, 0);
                 if (keyboardControls.moveForward) {
-                    console.log("Moving Forward");
                     velocity.z -= 400.0 * delta;
                 }
                 if (keyboardControls.moveLeft) {
-                    console.log("Moving left");
                     velocity.x -= 400.0 * delta;
                 }
                 if (keyboardControls.moveBackward) {
-                    console.log("Moving Backward");
                     velocity.z += 400.0 * delta;
                 }
                 if (keyboardControls.moveRight) {
-                    console.log("Moving Right");
                     velocity.x += 400.0 * delta;
                 }
                 if (keyboardControls.jump) {
-                    console.log("Jumping");
                     velocity.y += 4000.0 * delta;
                     if (player.position.y > 4) {
                         isGrounded = false;
@@ -257,22 +281,30 @@ var game = (function () {
                 }
                 player.setDamping(0.7, 0.1);
                 // Changing player's rotation
-                player.setAngularVelocity(new Vector3(0, -mouseControls.yaw, 0));
+                player.setAngularVelocity(new Vector3(0, mouseControls.yaw, 0));
                 direction.addVectors(direction, velocity);
                 direction.applyQuaternion(player.quaternion);
                 if (Math.abs(player.getLinearVelocity().x) < 20 && Math.abs(player.getLinearVelocity().y) < 10) {
                     player.applyCentralForce(direction);
                 }
+                cameraLook();
             } // isGrounded ends
+            //reset Pitch and Yaw
+            mouseControls.pitch = 0;
+            mouseControls.yaw = 0;
+            prevTime = time;
         } // Controls Enabled ends
         else {
             player.setAngularVelocity(new Vector3(0, 0, 0));
         }
-        prevTime = time;
-        // render using requestAnimationFrame
-        requestAnimationFrame(gameLoop);
-        // render the scene
-        renderer.render(scene, camera);
+    }
+    // Camera Look function
+    function cameraLook() {
+        var zenith = THREE.Math.degToRad(90);
+        var nadir = THREE.Math.degToRad(-90);
+        var cameraPitch = camera.rotation.x + mouseControls.pitch;
+        // Constrain the Camera Pitch
+        camera.rotation.x = THREE.Math.clamp(cameraPitch, nadir, zenith);
     }
     // Setup default renderer
     function setupRenderer() {
@@ -286,8 +318,8 @@ var game = (function () {
     // Setup main camera for the scene
     function setupCamera() {
         camera = new PerspectiveCamera(35, config.Screen.RATIO, 0.1, 100);
-        camera.position.set(0, 10, 30);
-        camera.lookAt(new Vector3(0, 0, 0));
+        //camera.position.set(0, 10, 30);
+        //camera.lookAt(new Vector3(0, 0, 0));
         console.log("Finished setting up Camera...");
     }
     window.onload = init;

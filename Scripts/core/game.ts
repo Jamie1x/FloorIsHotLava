@@ -15,7 +15,9 @@ import AxisHelper = THREE.AxisHelper;
 import LambertMaterial = THREE.MeshLambertMaterial;
 import MeshBasicMaterial = THREE.MeshBasicMaterial;
 import LineBasicMaterial = THREE.LineBasicMaterial;
+import PhongMaterial = THREE.MeshPhongMaterial;
 import Material = THREE.Material;
+import Texture = THREE.Texture;
 import Line = THREE.Line;
 import Mesh = THREE.Mesh;
 import Object3D = THREE.Object3D;
@@ -55,8 +57,11 @@ var game = (() => {
     var instructions: HTMLElement;
     var spotLight: SpotLight;
     var groundGeometry: CubeGeometry;
-    var groundMaterial: Physijs.Material;
+    var groundPhysicsMaterial: Physijs.Material;
+    var groundMaterial: PhongMaterial;
     var ground: Physijs.Mesh;
+    var groundTexture: Texture;
+    var groundTextureNormal: Texture;
     var clock: Clock;
     var playerGeometry: CubeGeometry;
     var playerMaterial: Physijs.Material;
@@ -146,17 +151,32 @@ var game = (() => {
         scene.add(spotLight);
         console.log("Added spotLight to scene");
 
-        // Burnt Ground
+        // Ground Object
+        groundTexture = new THREE.TextureLoader().load('../../Assets/images/GravelCobble.jpg');
+        groundTexture.wrapS = THREE.RepeatWrapping;
+        groundTexture.wrapT = THREE.RepeatWrapping;
+        groundTexture.repeat.set(8, 8);
+
+        groundTextureNormal = new THREE.TextureLoader().load('../../Assets/images/GravelCobbleNormal.jpg');
+        groundTextureNormal.wrapS = THREE.RepeatWrapping;
+        groundTextureNormal.wrapT = THREE.RepeatWrapping;
+        groundTextureNormal.repeat.set(8, 8);
+
+        groundMaterial = new PhongMaterial();
+        groundMaterial.map = groundTexture;
+        groundMaterial.bumpMap = groundTextureNormal;
+        groundMaterial.bumpScale = 0.2;
+
         groundGeometry = new BoxGeometry(32, 1, 32);
-        groundMaterial = Physijs.createMaterial(new LambertMaterial({ color: 0xe75d14 }), 0, 0);
-        ground = new Physijs.ConvexMesh(groundGeometry, groundMaterial, 0);
+        groundPhysicsMaterial = Physijs.createMaterial(groundMaterial, 0, 0);
+        ground = new Physijs.ConvexMesh(groundGeometry, groundPhysicsMaterial, 0);
         ground.receiveShadow = true;
         ground.name = "Ground";
         scene.add(ground);
         console.log("Added Burnt Ground to scene");
 
         // Player Object
-        playerGeometry = new BoxGeometry(2, 2, 2);
+        playerGeometry = new BoxGeometry(2, 4, 2);
         playerMaterial = Physijs.createMaterial(new LambertMaterial({ color: 0x00ff00 }), 0.4, 0);
 
         player = new Physijs.BoxMesh(playerGeometry, playerMaterial, 1);
@@ -169,6 +189,9 @@ var game = (() => {
 
         // Collision Check
         player.addEventListener('collision', (event) => {
+
+            console.log(event);
+
             if (event.name === "Ground") {
                 console.log("player hit the ground");
                 isGrounded = true;
@@ -186,6 +209,11 @@ var game = (() => {
         directionLine = new Line(directionLineGeometry, directionLineMaterial);
         player.add(directionLine);
         console.log("Added DirectionLine to the Player");
+
+        // create parent-child relationship with camera and player
+        player.add(camera);
+        camera.position.set(0, 1, 0);
+        
 
         // Sphere Object
         sphereGeometry = new SphereGeometry(2, 32, 32);
@@ -264,6 +292,21 @@ var game = (() => {
     function gameLoop(): void {
         stats.update();
 
+        checkControls();
+
+
+
+
+        // render using requestAnimationFrame
+        requestAnimationFrame(gameLoop);
+
+        // render the scene
+        renderer.render(scene, camera);
+    }
+
+
+    // Check Controls Function
+    function checkControls(): void {
         if (keyboardControls.enabled) {
             velocity = new Vector3();
 
@@ -273,23 +316,18 @@ var game = (() => {
             if (isGrounded) {
                 var direction = new Vector3(0, 0, 0);
                 if (keyboardControls.moveForward) {
-                    console.log("Moving Forward");
                     velocity.z -= 400.0 * delta;
                 }
                 if (keyboardControls.moveLeft) {
-                    console.log("Moving left");
                     velocity.x -= 400.0 * delta;
                 }
                 if (keyboardControls.moveBackward) {
-                    console.log("Moving Backward");
                     velocity.z += 400.0 * delta;
                 }
                 if (keyboardControls.moveRight) {
-                    console.log("Moving Right");
                     velocity.x += 400.0 * delta;
                 }
                 if (keyboardControls.jump) {
-                    console.log("Jumping");
                     velocity.y += 4000.0 * delta;
                     if (player.position.y > 4) {
                         isGrounded = false;
@@ -298,28 +336,38 @@ var game = (() => {
 
                 player.setDamping(0.7, 0.1);
                 // Changing player's rotation
-                player.setAngularVelocity(new Vector3(0, -mouseControls.yaw, 0));
+                player.setAngularVelocity(new Vector3(0, mouseControls.yaw, 0));
                 direction.addVectors(direction, velocity);
                 direction.applyQuaternion(player.quaternion);
                 if (Math.abs(player.getLinearVelocity().x) < 20 && Math.abs(player.getLinearVelocity().y) < 10) {
                     player.applyCentralForce(direction);
                 }
 
+                cameraLook();
+
             } // isGrounded ends
 
-        } // Controls Enabled ends
-        else {
-            player.setAngularVelocity(new Vector3(0, 0 , 0));   
-        }
-
+            //reset Pitch and Yaw
+            mouseControls.pitch = 0;
+            mouseControls.yaw = 0;
 
             prevTime = time;
+        } // Controls Enabled ends
+        else {
+            player.setAngularVelocity(new Vector3(0, 0, 0));
+        }
+    }
 
-        // render using requestAnimationFrame
-        requestAnimationFrame(gameLoop);
+    // Camera Look function
+    function cameraLook(): void {
+        var zenith: number = THREE.Math.degToRad(90);
+        var nadir: number = THREE.Math.degToRad(-90);
 
-        // render the scene
-        renderer.render(scene, camera);
+        var cameraPitch: number = camera.rotation.x + mouseControls.pitch;
+
+        // Constrain the Camera Pitch
+        camera.rotation.x = THREE.Math.clamp(cameraPitch, nadir, zenith);
+
     }
 
     // Setup default renderer
@@ -335,8 +383,8 @@ var game = (() => {
     // Setup main camera for the scene
     function setupCamera(): void {
         camera = new PerspectiveCamera(35, config.Screen.RATIO, 0.1, 100);
-        camera.position.set(0, 10, 30);
-        camera.lookAt(new Vector3(0, 0, 0));
+        //camera.position.set(0, 10, 30);
+        //camera.lookAt(new Vector3(0, 0, 0));
         console.log("Finished setting up Camera...");
     }
 
