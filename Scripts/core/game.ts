@@ -78,6 +78,7 @@ var game = (() => {
     var directionLineMaterial: LineBasicMaterial;
     var directionLineGeometry: Geometry;
     var directionLine: Line;
+    var jumpHeight: number;
 
     function init() {
         // Create to HTMLElements
@@ -186,11 +187,30 @@ var game = (() => {
         player.castShadow = true;
         player.name = "Player";
         scene.add(player);
-        console.log("Added Player to Scene");
+
+        //startPlatform
+        var startPlatform = new Physijs.ConvexMesh(
+            new BoxGeometry(10, 1, 10),
+            Physijs.createMaterial(new LambertMaterial()),
+            0
+        );
+        startPlatform.position.set(0, 1, 32);
+        startPlatform.name = "Ground";
+        scene.add(startPlatform);
+
+        //chair
+        var chair = new Physijs.ConvexMesh(
+            new BoxGeometry(2, 2, 2),
+            Physijs.createMaterial(new LambertMaterial()),
+            0
+        );
+        chair.position.set(0, 1, 16);
+        chair.name = "Ground";
+        scene.add(chair);
 
         //table
         var table = new Physijs.ConvexMesh(
-            new BoxGeometry(10, 1, 10),
+            new BoxGeometry(3, 1, 8),
             Physijs.createMaterial(new LambertMaterial()),
             0
         );
@@ -198,15 +218,15 @@ var game = (() => {
         table.name = "Ground";
         scene.add(table);
 
-        //stool
-        var stool = new Physijs.ConvexMesh(
-            new BoxGeometry(1, 3, 1),
+        //couch
+        var couch = new Physijs.ConvexMesh(
+            new BoxGeometry(3, 2, 8),
             Physijs.createMaterial(new LambertMaterial()),
             0
         );
-        stool.position.set(0, 3, 32);
-        stool.name = "Ground";
-        scene.add(stool);
+        couch.position.set(-10, 1.5, 0);
+        couch.name = "Ground";
+        scene.add(couch);
 
         // Collision Check
         player.addEventListener('collision', (event) => {
@@ -215,6 +235,7 @@ var game = (() => {
 
             if (event.name === "Ground") {
                 isGrounded = true;
+                jumpHeight = player.position.y + 1;
             }
             if (event.name === "Lava") {
                 isDead = true;
@@ -309,25 +330,23 @@ var game = (() => {
             var time: number = performance.now();
             var delta: number = (time - prevTime) / 1000;
 
-            //if (isGrounded) {
             var direction = new Vector3(0, 0, 0);
             if (keyboardControls.moveForward) {
-                velocity.z -= 400.0 * delta;
+                velocity.z -= 1000.0 * delta;
             }
             if (keyboardControls.moveLeft) {
-                velocity.x -= 400.0 * delta;
+                velocity.x -= 1000.0 * delta;
             }
             if (keyboardControls.moveBackward) {
-                velocity.z += 400.0 * delta;
+                velocity.z += 1000.0 * delta;
             }
             if (keyboardControls.moveRight) {
-                velocity.x += 400.0 * delta;
+                velocity.x += 1000.0 * delta;
             }
             if (isGrounded) {
                 if (keyboardControls.jump) {
-                    var timer = time;
-                    velocity.y += 4000.0 * delta;
-                    if (timer > 4) {
+                    velocity.y = 4000.0 * delta;
+                    if (player.position.y > jumpHeight) {
                         isGrounded = false;
                     }
                 }
@@ -343,8 +362,6 @@ var game = (() => {
             }
 
             cameraLook();
-
-            //} // isGrounded ends
 
             //reset Pitch and Yaw
             mouseControls.pitch = 0;
