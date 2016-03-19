@@ -55,6 +55,18 @@ var game = (function () {
     var ground;
     var groundTexture;
     var groundTextureNormal;
+    var rWallGeometry;
+    var rWallPhysicsMaterial;
+    var rWallMaterial;
+    var rWall;
+    var rWallTexture;
+    var rWallTextureNormal;
+    var lWallGeometry;
+    var lWallPhysicsMaterial;
+    var lWallMaterial;
+    var lWall;
+    var lWallTexture;
+    var lWallTextureNormal;
     var clock;
     var playerGeometry;
     var playerMaterial;
@@ -104,7 +116,7 @@ var game = (function () {
         // Scene changes for Physijs
         scene.name = "Main";
         scene.fog = new THREE.Fog(0xffffff, 0, 750);
-        scene.setGravity(new THREE.Vector3(0, -10, 0));
+        scene.setGravity(new THREE.Vector3(0, -15, 0));
         scene.addEventListener('update', function () {
             scene.simulate(undefined, 2);
         });
@@ -129,16 +141,15 @@ var game = (function () {
         spotLight.shadowDarkness = 0.5;
         spotLight.name = "Spot Light";
         scene.add(spotLight);
-        console.log("Added spotLight to scene");
         // Ground Object
         groundTexture = new THREE.TextureLoader().load('../../Assets/images/lava.png');
         groundTexture.wrapS = THREE.RepeatWrapping;
         groundTexture.wrapT = THREE.RepeatWrapping;
-        groundTexture.repeat.set(8, 8);
+        groundTexture.repeat.set(4, 4);
         groundTextureNormal = new THREE.TextureLoader().load('../../Assets/images/lavaMap.png');
         groundTextureNormal.wrapS = THREE.RepeatWrapping;
         groundTextureNormal.wrapT = THREE.RepeatWrapping;
-        groundTextureNormal.repeat.set(8, 8);
+        groundTextureNormal.repeat.set(4, 4);
         groundMaterial = new PhongMaterial();
         groundMaterial.map = groundTexture;
         groundMaterial.bumpMap = groundTextureNormal;
@@ -149,12 +160,51 @@ var game = (function () {
         ground.receiveShadow = true;
         ground.name = "Lava";
         scene.add(ground);
-        console.log("Added Burnt Ground to scene");
+        // rWall Object
+        rWallTexture = new THREE.TextureLoader().load('../../Assets/images/Wall.jpg');
+        rWallTexture.wrapS = THREE.RepeatWrapping;
+        rWallTexture.wrapT = THREE.RepeatWrapping;
+        rWallTexture.repeat.set(2, 2);
+        rWallTextureNormal = new THREE.TextureLoader().load('../../Assets/images/WallMap.jpg');
+        rWallTextureNormal.wrapS = THREE.RepeatWrapping;
+        rWallTextureNormal.wrapT = THREE.RepeatWrapping;
+        rWallTextureNormal.repeat.set(2, 2);
+        rWallMaterial = new PhongMaterial();
+        rWallMaterial.map = rWallTexture;
+        rWallMaterial.bumpMap = rWallTextureNormal;
+        rWallMaterial.bumpScale = -0.2;
+        rWallGeometry = new BoxGeometry(1, 32, 96);
+        rWallPhysicsMaterial = Physijs.createMaterial(rWallMaterial, 0, 0);
+        rWall = new Physijs.ConvexMesh(rWallGeometry, rWallPhysicsMaterial, 0);
+        rWall.position.set(16, 0, 0);
+        rWall.receiveShadow = true;
+        rWall.name = "rWall";
+        scene.add(rWall);
+        // lWall Object
+        lWallTexture = new THREE.TextureLoader().load('../../Assets/images/Wall.jpg');
+        lWallTexture.wrapS = THREE.RepeatWrapping;
+        lWallTexture.wrapT = THREE.RepeatWrapping;
+        lWallTexture.repeat.set(2, 2);
+        lWallTextureNormal = new THREE.TextureLoader().load('../../Assets/images/WallMap.jpg');
+        lWallTextureNormal.wrapS = THREE.RepeatWrapping;
+        lWallTextureNormal.wrapT = THREE.RepeatWrapping;
+        lWallTextureNormal.repeat.set(2, 2);
+        lWallMaterial = new PhongMaterial();
+        lWallMaterial.map = lWallTexture;
+        lWallMaterial.bumpMap = lWallTextureNormal;
+        lWallMaterial.bumpScale = -0.2;
+        lWallGeometry = new BoxGeometry(1, 32, 96);
+        lWallPhysicsMaterial = Physijs.createMaterial(lWallMaterial, 0, 0);
+        lWall = new Physijs.ConvexMesh(lWallGeometry, lWallPhysicsMaterial, 0);
+        lWall.position.set(-16, 0, 0);
+        lWall.receiveShadow = true;
+        lWall.name = "lWall";
+        scene.add(lWall);
         // Player Object
         playerGeometry = new BoxGeometry(2, 4, 2);
         playerMaterial = Physijs.createMaterial(new LambertMaterial({ color: 0x00ff00 }), 0.4, 0);
         player = new Physijs.BoxMesh(playerGeometry, playerMaterial, 1);
-        player.position.set(0, 10, 32);
+        player.position.set(0, 5, 32);
         player.receiveShadow = true;
         player.castShadow = true;
         player.name = "Player";
@@ -179,6 +229,23 @@ var game = (function () {
         couch.position.set(-10, 1.5, 0);
         couch.name = "Ground";
         scene.add(couch);
+        //chair2
+        var chair2 = new Physijs.ConvexMesh(new BoxGeometry(2, 2, 2), Physijs.createMaterial(new LambertMaterial()), 0);
+        chair2.position.set(-7, 1, -16);
+        chair2.name = "Ground";
+        scene.add(chair2);
+        //rug
+        var rug = new Physijs.ConvexMesh(new BoxGeometry(5, 1, 8), Physijs.createMaterial(new LambertMaterial()), 0);
+        rug.position.set(0, 0.1, -32);
+        rug.name = "Ground";
+        scene.add(rug);
+        //matt
+        var matt = new Physijs.ConvexMesh(new BoxGeometry(2, 1, 2), Physijs.createMaterial(new LambertMaterial()), 0);
+        matt.position.set(0, 0.1, -46);
+        matt.name = "Ground";
+        scene.add(matt);
+        var ambientLight = new THREE.AmbientLight(0xf0f0f0);
+        scene.add(ambientLight);
         // Collision Check
         player.addEventListener('collision', function (event) {
             console.log(event);
