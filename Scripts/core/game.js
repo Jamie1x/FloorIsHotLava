@@ -77,13 +77,13 @@ var game = (function () {
     var keyboardControls;
     var mouseControls;
     var isGrounded;
-    var isDead;
     var velocity = new Vector3(0, 0, 0);
     var prevTime = 0;
     var directionLineMaterial;
     var directionLineGeometry;
     var directionLine;
     var jumpHeight;
+    var health = 5;
     function init() {
         // Create to HTMLElements
         blocker = document.getElementById("blocker");
@@ -254,7 +254,7 @@ var game = (function () {
                 jumpHeight = player.position.y + 1;
             }
             if (event.name === "Lava") {
-                isDead = true;
+                health--;
             }
         });
         // create parent-child relationship with camera and player
@@ -318,10 +318,17 @@ var game = (function () {
     function gameLoop() {
         stats.update();
         checkControls();
+        checkPulse();
         // render using requestAnimationFrame
         requestAnimationFrame(gameLoop);
         // render the scene
         renderer.render(scene, camera);
+    }
+    function checkPulse() {
+        if (health <= 0) {
+            player.position.set(0, 0, 0);
+            keyboardControls.enabled = false;
+        }
     }
     // Check Controls Function
     function checkControls() {
