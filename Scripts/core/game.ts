@@ -14,22 +14,16 @@ import Geometry = THREE.Geometry;
 import AxisHelper = THREE.AxisHelper;
 import LambertMaterial = THREE.MeshLambertMaterial;
 import BasicMaterial = THREE.MeshBasicMaterial;
-import LineBasicMaterial = THREE.LineBasicMaterial;
 import PhongMaterial = THREE.MeshPhongMaterial;
 import Material = THREE.Material;
 import Texture = THREE.Texture;
-import Line = THREE.Line;
 import Mesh = THREE.Mesh;
 import Object3D = THREE.Object3D;
 import SpotLight = THREE.SpotLight;
 import PointLight = THREE.PointLight;
 import AmbientLight = THREE.AmbientLight;
-import Control = objects.Control;
-import GUI = dat.GUI;
 import Color = THREE.Color;
 import Vector3 = THREE.Vector3;
-import Face3 = THREE.Face3;
-import Point = objects.Point;
 import CScreen = config.Screen;
 import Clock = THREE.Clock;
 
@@ -50,8 +44,6 @@ var game = (() => {
     var scene: Scene = new Scene(); // Instantiate Scene Object
     var renderer: Renderer;
     var camera: PerspectiveCamera;
-    var control: Control;
-    var gui: GUI;
     var stats: Stats;
     var blocker: HTMLElement;
     var instructions: HTMLElement;
@@ -86,16 +78,57 @@ var game = (() => {
     var isGrounded: boolean;
     var velocity: Vector3 = new Vector3(0, 0, 0);
     var prevTime: number = 0;
-    var directionLineMaterial: LineBasicMaterial;
-    var directionLineGeometry: Geometry;
-    var directionLine: Line;
     var jumpHeight: number;
-    var health: number = 5;
+    var health: number;
+    var assets: createjs.LoadQueue;
+    var canvas: HTMLElement;
+    var stage: createjs.Stage;
+    var scoreLabel: createjs.Text;
+    var healthLabel: createjs.Text;
+    var score: number;
+
+    var manifest = [
+        { id: "land", src: "../../Assets/audio/Land.wav" }
+    ];
+
+    function preload(): void {
+        assets = new createjs.LoadQueue();
+        assets.installPlugin(createjs.Sound);
+        assets.on("complete", init, this);
+        assets.loadManifest(manifest);
+    }
+
+    function setupCanvas(): void {
+        canvas = document.getElementById("canvas");
+        canvas.setAttribute("width", config.Screen.WIDTH.toString());
+        canvas.setAttribute("height", (config.Screen.HEIGHT * 0.1).toString());
+        canvas.style.backgroundColor = "#000000";
+        stage = new createjs.Stage(canvas);
+    }
+    
+    function setupScoreboard(): void{
+        score = 0;
+        health = 5;
+        
+        scoreLabel = new createjs.Text("Score: " + score, "40px Consolas", "#ffffff");
+        scoreLabel.x = config.Screen.WIDTH * 0.1;
+        scoreLabel.y = (config.Screen.HEIGHT * 0.15) * 0.2;
+        stage.addChild(scoreLabel);
+        
+        healthLabel = new createjs.Text("Health: " + health, "40px Consolas", "#ffffff");
+        healthLabel.x = config.Screen.WIDTH * 0.8;
+        healthLabel.y = (config.Screen.HEIGHT * 0.15) * 0.2;
+        stage.addChild(healthLabel);
+    }
 
     function init() {
         // Create to HTMLElements
         blocker = document.getElementById("blocker");
         instructions = document.getElementById("instructions");
+        
+        //setup canvas and stage
+        setupCanvas();
+        setupScoreboard();
 
         //check to see if pointerlock is supported
         havePointerLock = 'pointerLockElement' in document ||
@@ -113,8 +146,6 @@ var game = (() => {
             instructions.addEventListener('click', () => {
 
                 // Ask the user for pointer lock
-                console.log("Requesting PointerLock");
-
                 element.requestPointerLock = element.requestPointerLock ||
                     element.mozRequestPointerLock ||
                     element.webkitRequestPointerLock;
@@ -186,7 +217,7 @@ var game = (() => {
         ground.receiveShadow = true;
         ground.name = "Lava";
         scene.add(ground);
-        
+
         // rWall Object
         rWallTexture = new THREE.TextureLoader().load('../../Assets/images/Wall.jpg');
         rWallTexture.wrapS = THREE.RepeatWrapping;
@@ -206,11 +237,11 @@ var game = (() => {
         rWallGeometry = new BoxGeometry(1, 32, 96);
         rWallPhysicsMaterial = Physijs.createMaterial(rWallMaterial, 0, 0);
         rWall = new Physijs.ConvexMesh(rWallGeometry, rWallPhysicsMaterial, 0);
-        rWall.position.set(16,0,0);
+        rWall.position.set(16, 0, 0);
         rWall.receiveShadow = true;
         rWall.name = "rWall";
         scene.add(rWall);
-        
+
         // lWall Object
         lWallTexture = new THREE.TextureLoader().load('../../Assets/images/Wall.jpg');
         lWallTexture.wrapS = THREE.RepeatWrapping;
@@ -230,7 +261,7 @@ var game = (() => {
         lWallGeometry = new BoxGeometry(1, 32, 96);
         lWallPhysicsMaterial = Physijs.createMaterial(lWallMaterial, 0, 0);
         lWall = new Physijs.ConvexMesh(lWallGeometry, lWallPhysicsMaterial, 0);
-        lWall.position.set(-16,0,0);
+        lWall.position.set(-16, 0, 0);
         lWall.receiveShadow = true;
         lWall.name = "lWall";
         scene.add(lWall);
@@ -285,7 +316,7 @@ var game = (() => {
         couch.position.set(-10, 1.5, 0);
         couch.name = "Ground";
         scene.add(couch);
-        
+
         //chair2
         var chair2 = new Physijs.ConvexMesh(
             new BoxGeometry(2, 2, 2),
@@ -295,7 +326,7 @@ var game = (() => {
         chair2.position.set(-7, 1, -16);
         chair2.name = "Ground";
         scene.add(chair2);
-        
+
         //rug
         var rug = new Physijs.ConvexMesh(
             new BoxGeometry(5, 1, 8),
@@ -305,7 +336,7 @@ var game = (() => {
         rug.position.set(0, 0.1, -32);
         rug.name = "Ground";
         scene.add(rug);
-        
+
         //matt
         var matt = new Physijs.ConvexMesh(
             new BoxGeometry(2, 1, 2),
@@ -315,16 +346,14 @@ var game = (() => {
         matt.position.set(0, 0.1, -46);
         matt.name = "Ground";
         scene.add(matt);
-        
+
         var ambientLight = new THREE.AmbientLight(0xf0f0f0);
         scene.add(ambientLight);
 
         // Collision Check
         player.addEventListener('collision', (event) => {
-
-            console.log(event);
-
             if (event.name === "Ground") {
+                createjs.Sound.play("land");
                 isGrounded = true;
                 jumpHeight = player.position.y + 1;
             }
@@ -337,14 +366,8 @@ var game = (() => {
         player.add(camera);
         camera.position.set(0, 1, 0);
 
-        // add controls
-        gui = new GUI();
-        control = new Control();
-        addControl(control);
-
         // Add framerate stats
         addStatsObject();
-        console.log("Added Stats to scene...");
 
         document.body.appendChild(renderer.domElement);
         gameLoop(); // render the scene	
@@ -368,7 +391,6 @@ var game = (() => {
             blocker.style.display = '-moz-box';
             blocker.style.display = 'box';
             instructions.style.display = '';
-            console.log("PointerLock disabled");
         }
     }
 
@@ -383,10 +405,13 @@ var game = (() => {
         camera.aspect = window.innerWidth / window.innerHeight;
         camera.updateProjectionMatrix();
         renderer.setSize(window.innerWidth, window.innerHeight);
-    }
-
-    function addControl(controlObject: Control): void {
-        /* ENTER CODE for the GUI CONTROL HERE */
+        
+        canvas.style.width = "100%";
+        scoreLabel.x = config.Screen.WIDTH * 0.1;
+        scoreLabel.y = (config.Screen.HEIGHT * 0.15) * 0.2;
+        healthLabel.x = config.Screen.WIDTH * 0.8;
+        healthLabel.y = (config.Screen.HEIGHT * 0.15) * 0.2;
+        stage.update();
     }
 
     // Add Frame Rate Stats to the Scene
@@ -404,8 +429,9 @@ var game = (() => {
         stats.update();
 
         checkControls();
-        
         checkPulse();
+        
+        stage.update();
 
         // render using requestAnimationFrame
         requestAnimationFrame(gameLoop);
@@ -413,10 +439,10 @@ var game = (() => {
         // render the scene
         renderer.render(scene, camera);
     }
-    
+
     function checkPulse(): void {
-        if(health <= 0) {
-            player.position.set(0,0,0);
+        if (health <= 0) {
+            player.position.set(0, 0, 0);
             keyboardControls.enabled = false;
         }
     }
@@ -492,18 +518,14 @@ var game = (() => {
         renderer.setPixelRatio(window.devicePixelRatio);
         renderer.setSize(CScreen.WIDTH, CScreen.HEIGHT);
         renderer.shadowMap.enabled = true;
-        console.log("Finished setting up Renderer...");
     }
 
     // Setup main camera for the scene
     function setupCamera(): void {
         camera = new PerspectiveCamera(35, config.Screen.RATIO, 0.1, 100);
-        //camera.position.set(0, 10, 30);
-        //camera.lookAt(new Vector3(0, 0, 0));
-        console.log("Finished setting up Camera...");
     }
 
-    window.onload = init;
+    window.onload = preload;
 
     return {
         scene: scene
