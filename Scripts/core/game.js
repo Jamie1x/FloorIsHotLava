@@ -80,7 +80,8 @@ var game = (function () {
     var healthLabel;
     var score;
     var manifest = [
-        { id: "land", src: "../../Assets/audio/Land.wav" }
+        { id: "land", src: "../../Assets/audio/Land.wav" },
+        { id: "jump", src: "../../Assets/audio/Jump.wav" }
     ];
     function preload() {
         assets = new createjs.LoadQueue();
@@ -275,6 +276,7 @@ var game = (function () {
         player.addEventListener('collision', function (event) {
             if (event.name === "Ground") {
                 createjs.Sound.play("land");
+                score = score + 1;
                 isGrounded = true;
                 jumpHeight = player.position.y + 1;
             }
@@ -374,6 +376,7 @@ var game = (function () {
             }
             if (isGrounded) {
                 if (keyboardControls.jump) {
+                    createjs.Sound.play("jump");
                     velocity.y = 4000.0 * delta;
                     if (player.position.y > jumpHeight) {
                         isGrounded = false;
