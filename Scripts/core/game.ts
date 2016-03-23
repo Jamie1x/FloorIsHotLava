@@ -109,14 +109,14 @@ var game = (() => {
     
     function setupScoreboard(): void{
         score = 0;
-        health = 5;
+        health = 3;
         
         scoreLabel = new createjs.Text("Score: " + score, "40px Consolas", "#ffffff");
         scoreLabel.x = config.Screen.WIDTH * 0.1;
         scoreLabel.y = (config.Screen.HEIGHT * 0.15) * 0.2;
         stage.addChild(scoreLabel);
         
-        healthLabel = new createjs.Text("Health: " + health, "40px Consolas", "#ffffff");
+        healthLabel = new createjs.Text("LIVES: " + health, "40px Consolas", "#ffffff");
         healthLabel.x = config.Screen.WIDTH * 0.8;
         healthLabel.y = (config.Screen.HEIGHT * 0.15) * 0.2;
         stage.addChild(healthLabel);
@@ -200,12 +200,12 @@ var game = (() => {
         groundTexture = new THREE.TextureLoader().load('../../Assets/images/lava.png');
         groundTexture.wrapS = THREE.RepeatWrapping;
         groundTexture.wrapT = THREE.RepeatWrapping;
-        groundTexture.repeat.set(4, 4);
+        //groundTexture.repeat.set(4, 4);
 
         groundTextureNormal = new THREE.TextureLoader().load('../../Assets/images/lavaMap.png');
         groundTextureNormal.wrapS = THREE.RepeatWrapping;
         groundTextureNormal.wrapT = THREE.RepeatWrapping;
-        groundTextureNormal.repeat.set(4, 4);
+        //groundTextureNormal.repeat.set(4, 4);
 
         groundMaterial = new PhongMaterial();
         groundMaterial.map = groundTexture;
@@ -223,12 +223,12 @@ var game = (() => {
         rWallTexture = new THREE.TextureLoader().load('../../Assets/images/Wall.jpg');
         rWallTexture.wrapS = THREE.RepeatWrapping;
         rWallTexture.wrapT = THREE.RepeatWrapping;
-        rWallTexture.repeat.set(2, 2);
+        //rWallTexture.repeat.set(2, 2);
 
         rWallTextureNormal = new THREE.TextureLoader().load('../../Assets/images/WallMap.jpg');
         rWallTextureNormal.wrapS = THREE.RepeatWrapping;
         rWallTextureNormal.wrapT = THREE.RepeatWrapping;
-        rWallTextureNormal.repeat.set(2, 2);
+        //rWallTextureNormal.repeat.set(2, 2);
 
         rWallMaterial = new PhongMaterial();
         rWallMaterial.map = rWallTexture;
@@ -334,7 +334,7 @@ var game = (() => {
             Physijs.createMaterial(new LambertMaterial()),
             0
         );
-        rug.position.set(0, 0.1, -32);
+        rug.position.set(0, 0.2, -32);
         rug.name = "Ground";
         scene.add(rug);
 
@@ -344,7 +344,7 @@ var game = (() => {
             Physijs.createMaterial(new LambertMaterial()),
             0
         );
-        matt.position.set(0, 0.1, -46);
+        matt.position.set(0, 0.2, -46);
         matt.name = "Ground";
         scene.add(matt);
 
@@ -355,12 +355,15 @@ var game = (() => {
         player.addEventListener('collision', (event) => {
             if (event.name === "Ground") {
                 createjs.Sound.play("land");
-                score = score + 1;
                 isGrounded = true;
                 jumpHeight = player.position.y + 1;
             }
             if (event.name === "Lava") {
                 health--;
+                healthLabel.text = "LIVES: " + health;
+                scene.remove(player);
+                player.position.set(0, 5, 32);
+                scene.add(player);
             }
         });
 
@@ -444,7 +447,6 @@ var game = (() => {
 
     function checkPulse(): void {
         if (health <= 0) {
-            player.position.set(0, 0, 0);
             keyboardControls.enabled = false;
         }
     }
