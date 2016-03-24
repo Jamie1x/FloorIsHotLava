@@ -79,6 +79,8 @@ var game = (function () {
     var scoreLabel;
     var healthLabel;
     var score;
+    var coins;
+    var cointCount = 3;
     var manifest = [
         { id: "land", src: "../../Assets/audio/Land.wav" },
         { id: "jump", src: "../../Assets/audio/Jump.wav" }
@@ -99,7 +101,7 @@ var game = (function () {
     function setupScoreboard() {
         score = 0;
         health = 3;
-        scoreLabel = new createjs.Text("Score: " + score, "40px Consolas", "#ffffff");
+        scoreLabel = new createjs.Text("SCORE: " + score, "40px Consolas", "#ffffff");
         scoreLabel.x = config.Screen.WIDTH * 0.1;
         scoreLabel.y = (config.Screen.HEIGHT * 0.15) * 0.2;
         stage.addChild(scoreLabel);
@@ -210,11 +212,11 @@ var game = (function () {
         lWallTexture = new THREE.TextureLoader().load('../../Assets/images/Wall.jpg');
         lWallTexture.wrapS = THREE.RepeatWrapping;
         lWallTexture.wrapT = THREE.RepeatWrapping;
-        lWallTexture.repeat.set(2, 2);
+        //lWallTexture.repeat.set(2, 2);
         lWallTextureNormal = new THREE.TextureLoader().load('../../Assets/images/WallMap.jpg');
         lWallTextureNormal.wrapS = THREE.RepeatWrapping;
         lWallTextureNormal.wrapT = THREE.RepeatWrapping;
-        lWallTextureNormal.repeat.set(2, 2);
+        //lWallTextureNormal.repeat.set(2, 2);
         lWallMaterial = new PhongMaterial();
         lWallMaterial.map = lWallTexture;
         lWallMaterial.bumpMap = lWallTextureNormal;
@@ -272,12 +274,13 @@ var game = (function () {
         scene.add(matt);
         var ambientLight = new THREE.AmbientLight(0xf0f0f0);
         scene.add(ambientLight);
+        addCoinMesh();
         // Collision Check
         player.addEventListener('collision', function (event) {
             if (event.name === "Ground") {
                 createjs.Sound.play("land");
                 isGrounded = true;
-                jumpHeight = player.position.y + 1;
+                jumpHeight = player.position.y;
             }
             if (event.name === "Lava") {
                 health--;
@@ -285,6 +288,17 @@ var game = (function () {
                 scene.remove(player);
                 player.position.set(0, 5, 32);
                 scene.add(player);
+            }
+            if (event.name === "Coin") {
+                score++;
+                scoreLabel.text = "SCORE: " + score;
+                scene.remove(event);
+            }
+        });
+        ground.addEventListener('collision', function (event) {
+            if (event.name === "Coin") {
+                scene.remove(event);
+                setCoinPosition(event);
             }
         });
         // create parent-child relationship with camera and player
@@ -296,6 +310,30 @@ var game = (function () {
         gameLoop(); // render the scene	
         scene.simulate();
         window.addEventListener('resize', onWindowResize, false);
+    }
+    // Add the Coin to the scene
+    function addCoinMesh() {
+        coins = new Array(); // Instantiate a convex mesh array
+        var coinLoader = new THREE.JSONLoader().load("../../Assets/items/coin.json", function (geometry) {
+            var phongMaterial = new PhongMaterial({ color: 0xE7AB32 });
+            phongMaterial.emissive = new THREE.Color(0xE7AB32);
+            var coinMaterial = Physijs.createMaterial((phongMaterial), 0.4, 0.6);
+            for (var count = 0; count < cointCount; count++) {
+                coins[count] = new Physijs.ConvexMesh(geometry, coinMaterial);
+                coins[count].receiveShadow = true;
+                coins[count].castShadow = true;
+                coins[count].name = "Coin";
+                setCoinPosition(coins[count]);
+            }
+        });
+        console.log("Added Coin Mesh to Scene");
+    }
+    // Set Coin Position
+    function setCoinPosition(coin) {
+        var randomPointX = Math.floor(Math.random() * 20) - 10;
+        var randomPointZ = Math.floor(Math.random() * 20) - 10;
+        coin.position.set(randomPointX, 3, randomPointZ);
+        scene.add(coin);
     }
     //PointerLockChange Event Handler
     function pointerLockChange(event) {
@@ -344,6 +382,10 @@ var game = (function () {
     // Setup main game loop
     function gameLoop() {
         stats.update();
+        coins.forEach(function (coin) {
+            coin.setAngularFactor(new Vector3(0, 0, 0));
+            coin.setAngularVelocity(new Vector3(0, 1, 0));
+        });
         checkControls();
         checkPulse();
         stage.update();
@@ -380,7 +422,7 @@ var game = (function () {
                 if (keyboardControls.jump) {
                     createjs.Sound.play("jump");
                     velocity.y = 4000.0 * delta;
-                    if (player.position.y > jumpHeight) {
+                    if (player.position.y > jumpHeight + 1) {
                         isGrounded = false;
                     }
                 }
