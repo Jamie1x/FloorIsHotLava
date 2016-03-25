@@ -47,18 +47,24 @@ var game = (function () {
     var ground;
     var groundTexture;
     var groundTextureNormal;
+    var WallTexture;
+    var WallTextureNormal;
+    var WallMaterial;
+    var sideWallTexture;
+    var sideWallTextureNormal;
+    var sideWallMaterial;
     var rWallGeometry;
     var rWallPhysicsMaterial;
-    var rWallMaterial;
     var rWall;
-    var rWallTexture;
-    var rWallTextureNormal;
     var lWallGeometry;
     var lWallPhysicsMaterial;
-    var lWallMaterial;
     var lWall;
-    var lWallTexture;
-    var lWallTextureNormal;
+    var fWallGeometry;
+    var fWallPhysicsMaterial;
+    var fWall;
+    var bWallGeometry;
+    var bWallPhysicsMaterial;
+    var bWall;
     var clock;
     var playerGeometry;
     var playerMaterial;
@@ -80,7 +86,9 @@ var game = (function () {
     var healthLabel;
     var score;
     var coins;
-    var cointCount = 3;
+    var cointCount = 10;
+    var blocks;
+    var blockCount = 10;
     var manifest = [
         { id: "land", src: "../../Assets/audio/Land.wav" },
         { id: "jump", src: "../../Assets/audio/Jump.wav" },
@@ -175,105 +183,94 @@ var game = (function () {
         groundTexture = new THREE.TextureLoader().load('../../Assets/images/lava.png');
         groundTexture.wrapS = THREE.RepeatWrapping;
         groundTexture.wrapT = THREE.RepeatWrapping;
-        //groundTexture.repeat.set(4, 4);
         groundTextureNormal = new THREE.TextureLoader().load('../../Assets/images/lavaMap.png');
         groundTextureNormal.wrapS = THREE.RepeatWrapping;
         groundTextureNormal.wrapT = THREE.RepeatWrapping;
-        //groundTextureNormal.repeat.set(4, 4);
         groundMaterial = new PhongMaterial();
         groundMaterial.map = groundTexture;
         groundMaterial.bumpMap = groundTextureNormal;
         groundMaterial.bumpScale = 0.2;
-        groundGeometry = new BoxGeometry(32, 1, 96);
+        groundGeometry = new BoxGeometry(32, 1, 200);
         groundPhysicsMaterial = Physijs.createMaterial(groundMaterial, 0, 0);
         ground = new Physijs.ConvexMesh(groundGeometry, groundPhysicsMaterial, 0);
+        ground.position.set(0, 0, -64);
         ground.receiveShadow = true;
         ground.name = "Lava";
         scene.add(ground);
-        // rWall Object
-        rWallTexture = new THREE.TextureLoader().load('../../Assets/images/Wall.jpg');
-        rWallTexture.wrapS = THREE.RepeatWrapping;
-        rWallTexture.wrapT = THREE.RepeatWrapping;
-        rWallTexture.repeat.set(2, 2);
-        rWallTextureNormal = new THREE.TextureLoader().load('../../Assets/images/WallMap.jpg');
-        rWallTextureNormal.wrapS = THREE.RepeatWrapping;
-        rWallTextureNormal.wrapT = THREE.RepeatWrapping;
-        rWallTextureNormal.repeat.set(2, 2);
-        rWallMaterial = new PhongMaterial();
-        rWallMaterial.map = rWallTexture;
-        rWallMaterial.bumpMap = rWallTextureNormal;
-        rWallMaterial.bumpScale = -0.2;
-        rWallGeometry = new BoxGeometry(1, 16, 96);
-        rWallPhysicsMaterial = Physijs.createMaterial(rWallMaterial, 0, 0);
+        //wall material
+        WallTexture = new THREE.TextureLoader().load('../../Assets/images/Wall.jpg');
+        WallTexture.wrapS = THREE.RepeatWrapping;
+        WallTexture.wrapT = THREE.RepeatWrapping;
+        WallTextureNormal = new THREE.TextureLoader().load('../../Assets/images/WallMap.jpg');
+        WallTextureNormal.wrapS = THREE.RepeatWrapping;
+        WallTextureNormal.wrapT = THREE.RepeatWrapping;
+        WallMaterial = new PhongMaterial();
+        WallMaterial.map = WallTexture;
+        WallMaterial.bumpMap = WallTextureNormal;
+        //sideWall material
+        sideWallTexture = new THREE.TextureLoader().load('../../Assets/images/wall.jpg');
+        sideWallTexture.wrapS = THREE.RepeatWrapping;
+        sideWallTexture.wrapT = THREE.RepeatWrapping;
+        sideWallTexture.repeat.set(5, 1);
+        sideWallTextureNormal = new THREE.TextureLoader().load('../../Assets/images/wallMap.jpg');
+        sideWallTextureNormal.wrapS = THREE.RepeatWrapping;
+        sideWallTextureNormal.wrapT = THREE.RepeatWrapping;
+        sideWallTextureNormal.repeat.set(5, 1);
+        sideWallMaterial = new PhongMaterial();
+        sideWallMaterial.map = sideWallTexture;
+        sideWallMaterial.bumpMap = sideWallTextureNormal;
+        // right wall object
+        rWallGeometry = new BoxGeometry(1, 16, 200);
+        rWallPhysicsMaterial = Physijs.createMaterial(sideWallMaterial, 0, 0);
         rWall = new Physijs.ConvexMesh(rWallGeometry, rWallPhysicsMaterial, 0);
-        rWall.position.set(16, 8, 0);
+        rWall.position.set(16, 8, -64);
         rWall.receiveShadow = true;
         rWall.name = "Wall";
         scene.add(rWall);
-        // lWall Object
-        lWallTexture = new THREE.TextureLoader().load('../../Assets/images/Wall.jpg');
-        lWallTexture.wrapS = THREE.RepeatWrapping;
-        lWallTexture.wrapT = THREE.RepeatWrapping;
-        lWallTexture.repeat.set(2, 2);
-        lWallTextureNormal = new THREE.TextureLoader().load('../../Assets/images/WallMap.jpg');
-        lWallTextureNormal.wrapS = THREE.RepeatWrapping;
-        lWallTextureNormal.wrapT = THREE.RepeatWrapping;
-        lWallTextureNormal.repeat.set(2, 2);
-        lWallMaterial = new PhongMaterial();
-        lWallMaterial.map = lWallTexture;
-        lWallMaterial.bumpMap = lWallTextureNormal;
-        lWallMaterial.bumpScale = -0.2;
-        lWallGeometry = new BoxGeometry(1, 16, 96);
-        lWallPhysicsMaterial = Physijs.createMaterial(lWallMaterial, 0, 0);
+        // left wall object
+        lWallGeometry = new BoxGeometry(1, 16, 200);
+        lWallPhysicsMaterial = Physijs.createMaterial(sideWallMaterial, 0, 0);
         lWall = new Physijs.ConvexMesh(lWallGeometry, lWallPhysicsMaterial, 0);
-        lWall.position.set(-16, 8, 0);
+        lWall.position.set(-16, 8, -64);
         lWall.receiveShadow = true;
         lWall.name = "Wall";
         scene.add(lWall);
+        // far wall object
+        fWallGeometry = new BoxGeometry(32, 16, 1);
+        fWallPhysicsMaterial = Physijs.createMaterial(WallMaterial, 0, 0);
+        fWall = new Physijs.ConvexMesh(fWallGeometry, fWallPhysicsMaterial, 0);
+        fWall.position.set(0, 8, -162);
+        fWall.receiveShadow = true;
+        fWall.name = "Wall";
+        scene.add(fWall);
+        // back wall object
+        bWallGeometry = new BoxGeometry(32, 16, 1);
+        bWallPhysicsMaterial = Physijs.createMaterial(WallMaterial, 0, 0);
+        bWall = new Physijs.ConvexMesh(bWallGeometry, bWallPhysicsMaterial, 0);
+        bWall.position.set(0, 8, 32);
+        bWall.receiveShadow = true;
+        bWall.name = "Wall";
+        scene.add(bWall);
         // Player Object
         playerGeometry = new BoxGeometry(2, 4, 2);
         playerMaterial = Physijs.createMaterial(new LambertMaterial({ color: 0x00ff00 }), 0.4, 0);
         player = new Physijs.BoxMesh(playerGeometry, playerMaterial, 1);
-        player.position.set(0, 5, 32);
+        player.position.set(0, 5, 16);
         player.receiveShadow = true;
         player.castShadow = true;
         player.name = "Player";
         scene.add(player);
         //startPlatform
         var startPlatform = new Physijs.ConvexMesh(new BoxGeometry(10, 1, 10), Physijs.createMaterial(new LambertMaterial()), 0);
-        startPlatform.position.set(0, 1, 32);
+        startPlatform.position.set(0, 1, 16);
         startPlatform.name = "Ground";
         scene.add(startPlatform);
-        //chair
-        var chair = new Physijs.ConvexMesh(new BoxGeometry(2, 2, 2), Physijs.createMaterial(new LambertMaterial()), 0);
-        chair.position.set(0, 1, 16);
-        chair.name = "Ground";
-        scene.add(chair);
-        //table
-        var table = new Physijs.ConvexMesh(new BoxGeometry(3, 1, 8), Physijs.createMaterial(new LambertMaterial()), 0);
-        table.position.set(0, 1, 0);
-        table.name = "Ground";
-        scene.add(table);
-        //couch
-        var couch = new Physijs.ConvexMesh(new BoxGeometry(3, 2, 8), Physijs.createMaterial(new LambertMaterial()), 0);
-        couch.position.set(-10, 1.5, 0);
-        couch.name = "Ground";
-        scene.add(couch);
-        //chair2
-        var chair2 = new Physijs.ConvexMesh(new BoxGeometry(2, 2, 2), Physijs.createMaterial(new LambertMaterial()), 0);
-        chair2.position.set(-7, 1, -16);
-        chair2.name = "Ground";
-        scene.add(chair2);
-        //rug
-        var rug = new Physijs.ConvexMesh(new BoxGeometry(5, 1, 8), Physijs.createMaterial(new LambertMaterial()), 0);
-        rug.position.set(0, 1, -32);
-        rug.name = "Ground";
-        scene.add(rug);
-        //matt
-        var matt = new Physijs.ConvexMesh(new BoxGeometry(2, 1, 2), Physijs.createMaterial(new LambertMaterial()), 0);
-        matt.position.set(0, 0.2, -46);
-        matt.name = "Finish";
-        scene.add(matt);
+        addBlocks();
+        //end
+        var end = new Physijs.ConvexMesh(new BoxGeometry(3, 2, 3), Physijs.createMaterial(new LambertMaterial()), 0);
+        end.position.set(0, 1, -150);
+        end.name = "Finish";
+        scene.add(end);
         //finish screen
         var finish = new Physijs.ConvexMesh(new BoxGeometry(20, 10, 1), Physijs.createMaterial(new LambertMaterial({ color: 0x000000 })), 0);
         finish.position.set(0, -10, -10);
@@ -293,7 +290,7 @@ var game = (function () {
                 health--;
                 healthLabel.text = "LIVES: " + health;
                 scene.remove(player);
-                player.position.set(0, 5, 32);
+                player.position.set(0, 5, 16);
                 scene.add(player);
             }
             if (event.name === "Finish") {
@@ -326,6 +323,17 @@ var game = (function () {
         scene.simulate();
         window.addEventListener('resize', onWindowResize, false);
     }
+    function addBlocks() {
+        for (var i = 0; i < blockCount; i++) {
+            var x = Math.random() * 10 + 1;
+            var z = Math.random() * 10 + 1;
+            var block = new Physijs.ConvexMesh(new BoxGeometry(x, 1, z), Physijs.createMaterial(new LambertMaterial()), 0);
+            var rand = Math.floor(Math.random() * 20) - 10;
+            block.position.set(rand, 1, i * -15);
+            block.name = "Ground";
+            scene.add(block);
+        }
+    }
     // Add the Coin to the scene
     function addCoinMesh() {
         coins = new Array(); // Instantiate a convex mesh array
@@ -346,7 +354,7 @@ var game = (function () {
     // Set Coin Position
     function setCoinPosition(coin) {
         var randomPointX = Math.floor(Math.random() * 20) - 10;
-        var randomPointZ = Math.floor(Math.random() * 20) - 10;
+        var randomPointZ = Math.random() * -100;
         coin.position.set(randomPointX, 2, randomPointZ);
         scene.add(coin);
     }
