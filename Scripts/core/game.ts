@@ -72,6 +72,7 @@ var game = (() => {
     var bWallGeometry: CubeGeometry;
     var bWallPhysicsMaterial: Physijs.Material;
     var bWall: Physijs.Mesh;
+    var ball: Physijs.Mesh;
     var clock: Clock;
     var playerGeometry: CubeGeometry;
     var playerMaterial: Physijs.Material;
@@ -95,7 +96,6 @@ var game = (() => {
 
     var coins: Physijs.ConcaveMesh[];
     var cointCount: number = 10;
-    var blocks: Physijs.BoxMesh[];
     var blockCount: number = 10;
 
     var manifest = [
@@ -243,7 +243,7 @@ var game = (() => {
         WallMaterial = new PhongMaterial();
         WallMaterial.map = WallTexture;
         WallMaterial.bumpMap = WallTextureNormal;
-        
+
         //sideWall material
         sideWallTexture = new THREE.TextureLoader().load('../../Assets/images/wall.jpg');
         sideWallTexture.wrapS = THREE.RepeatWrapping;
@@ -285,7 +285,7 @@ var game = (() => {
         fWall.receiveShadow = true;
         fWall.name = "Wall";
         scene.add(fWall);
-        
+
         // back wall object
         bWallGeometry = new BoxGeometry(32, 16, 1);
         bWallPhysicsMaterial = Physijs.createMaterial(WallMaterial, 0, 0);
@@ -328,12 +328,23 @@ var game = (() => {
         end.name = "Finish";
         scene.add(end);
 
+        //create lava ball
+        ball = new Physijs.ConvexMesh(
+            new SphereGeometry(0.5, 32, 32),
+            Physijs.createMaterial(new LambertMaterial({ color: 0xff0000 })),
+            1
+        );
+        ball.name = "Lava";
+
         //finish screen
+        var finishTxt = new THREE.TextureLoader().load('../../Assets/images/winner.png');
+        var finishMat = new PhongMaterial();
         var finish = new Physijs.ConvexMesh(
             new BoxGeometry(20, 10, 1),
-            Physijs.createMaterial(new LambertMaterial({ color: 0x000000 })),
+            Physijs.createMaterial(finishMat),
             0
         );
+        finishMat.map = finishTxt;
         finish.position.set(0, -10, -10);
         finish.name = "Finish";
         scene.add(finish);
@@ -349,6 +360,7 @@ var game = (() => {
                 createjs.Sound.play("land");
                 isGrounded = true;
                 jumpHeight = player.position.y;
+                sendBall();
             }
             if (event.name === "Lava") {
                 health--;
@@ -435,8 +447,9 @@ var game = (() => {
     // Set Coin Position
     function setCoinPosition(coin: Physijs.ConvexMesh): void {
         var randomPointX: number = Math.floor(Math.random() * 20) - 10;
+        var randomPointY: number = Math.random() * 50 + 30;
         var randomPointZ: number = Math.random() * -100;
-        coin.position.set(randomPointX, 2, randomPointZ);
+        coin.position.set(randomPointX, randomPointY, randomPointZ);
         scene.add(coin);
     }
 
@@ -497,6 +510,9 @@ var game = (() => {
             coin.setAngularVelocity(new Vector3(0, 1, 0));
         });
 
+        ball.setLinearFactor(new Vector3(0, 0, 0));
+        ball.setLinearVelocity(new Vector3(0, 0, 20));
+
         checkControls();
         checkPulse();
 
@@ -511,7 +527,19 @@ var game = (() => {
 
     function checkPulse(): void {
         if (health <= 0) {
-            keyboardControls.enabled = false;
+            //keyboardControls.enabled = false;
+            score = 0;
+            scoreLabel.text = "SCORE: " + score;
+            health = 3;
+            healthLabel.text = "HEALTH: " + health;
+        }
+    }
+
+    function sendBall(): void {
+        if (player.position.z <= -100 && player.position.z >= -110) {
+            ball.position.set(player.position.x, 2, -150);
+            scene.add(ball);
+            console.log("ball added");
         }
     }
 
@@ -583,7 +611,7 @@ var game = (() => {
     // Setup default renderer
     function setupRenderer(): void {
         renderer = new Renderer({ antialias: true });
-        renderer.setClearColor(0x404040, 1.0);
+        renderer.setClearColor(0x000000, 1.0);
         renderer.setPixelRatio(window.devicePixelRatio);
         renderer.setSize(CScreen.WIDTH, CScreen.HEIGHT);
         renderer.shadowMap.enabled = true;
@@ -591,7 +619,7 @@ var game = (() => {
 
     // Setup main camera for the scene
     function setupCamera(): void {
-        camera = new PerspectiveCamera(35, config.Screen.RATIO, 0.1, 100);
+        camera = new PerspectiveCamera(35, config.Screen.RATIO, 0.1, 200);
     }
 
     window.onload = preload;

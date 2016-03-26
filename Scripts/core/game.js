@@ -65,6 +65,7 @@ var game = (function () {
     var bWallGeometry;
     var bWallPhysicsMaterial;
     var bWall;
+    var ball;
     var clock;
     var playerGeometry;
     var playerMaterial;
@@ -87,7 +88,6 @@ var game = (function () {
     var score;
     var coins;
     var cointCount = 10;
-    var blocks;
     var blockCount = 10;
     var manifest = [
         { id: "land", src: "../../Assets/audio/Land.wav" },
@@ -271,8 +271,14 @@ var game = (function () {
         end.position.set(0, 1, -150);
         end.name = "Finish";
         scene.add(end);
+        //create lava ball
+        ball = new Physijs.ConvexMesh(new SphereGeometry(0.5, 32, 32), Physijs.createMaterial(new LambertMaterial({ color: 0xff0000 })), 1);
+        ball.name = "Lava";
         //finish screen
-        var finish = new Physijs.ConvexMesh(new BoxGeometry(20, 10, 1), Physijs.createMaterial(new LambertMaterial({ color: 0x000000 })), 0);
+        var finishTxt = new THREE.TextureLoader().load('../../Assets/images/winner.png');
+        var finishMat = new PhongMaterial();
+        var finish = new Physijs.ConvexMesh(new BoxGeometry(20, 10, 1), Physijs.createMaterial(finishMat), 0);
+        finishMat.map = finishTxt;
         finish.position.set(0, -10, -10);
         finish.name = "Finish";
         scene.add(finish);
@@ -285,6 +291,7 @@ var game = (function () {
                 createjs.Sound.play("land");
                 isGrounded = true;
                 jumpHeight = player.position.y;
+                sendBall();
             }
             if (event.name === "Lava") {
                 health--;
@@ -354,8 +361,9 @@ var game = (function () {
     // Set Coin Position
     function setCoinPosition(coin) {
         var randomPointX = Math.floor(Math.random() * 20) - 10;
+        var randomPointY = Math.random() * 50 + 30;
         var randomPointZ = Math.random() * -100;
-        coin.position.set(randomPointX, 2, randomPointZ);
+        coin.position.set(randomPointX, randomPointY, randomPointZ);
         scene.add(coin);
     }
     //PointerLockChange Event Handler
@@ -409,6 +417,8 @@ var game = (function () {
             coin.setAngularFactor(new Vector3(0, 0, 0));
             coin.setAngularVelocity(new Vector3(0, 1, 0));
         });
+        ball.setLinearFactor(new Vector3(0, 0, 0));
+        ball.setLinearVelocity(new Vector3(0, 0, 20));
         checkControls();
         checkPulse();
         stage.update();
@@ -419,7 +429,18 @@ var game = (function () {
     }
     function checkPulse() {
         if (health <= 0) {
-            keyboardControls.enabled = false;
+            //keyboardControls.enabled = false;
+            score = 0;
+            scoreLabel.text = "SCORE: " + score;
+            health = 3;
+            healthLabel.text = "HEALTH: " + health;
+        }
+    }
+    function sendBall() {
+        if (player.position.z <= -100 && player.position.z >= -110) {
+            ball.position.set(player.position.x, 2, -150);
+            scene.add(ball);
+            console.log("ball added");
         }
     }
     // Check Controls Function
@@ -479,14 +500,14 @@ var game = (function () {
     // Setup default renderer
     function setupRenderer() {
         renderer = new Renderer({ antialias: true });
-        renderer.setClearColor(0x404040, 1.0);
+        renderer.setClearColor(0x000000, 1.0);
         renderer.setPixelRatio(window.devicePixelRatio);
         renderer.setSize(CScreen.WIDTH, CScreen.HEIGHT);
         renderer.shadowMap.enabled = true;
     }
     // Setup main camera for the scene
     function setupCamera() {
-        camera = new PerspectiveCamera(35, config.Screen.RATIO, 0.1, 100);
+        camera = new PerspectiveCamera(35, config.Screen.RATIO, 0.1, 200);
     }
     window.onload = preload;
     return {
